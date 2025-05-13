@@ -1,10 +1,41 @@
-# Python-generated files
+# Environment variables and secrets
+.env
+.env.*
+
+# Python cache files
 __pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
+*.py[cod]
+*$py.class
 
 # Virtual environments
-.venv
+.venv/
+venv/
+ENV/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Logs and temporary files
+*.log
+*.tmp
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Auth
+credentials.json
+token.json
