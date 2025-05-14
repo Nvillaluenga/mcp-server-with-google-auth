@@ -1,0 +1,33 @@
+@startuml
+title Google Drive MCP Authentication Flow
+
+actor User
+participant "MCP Client" as Client
+participant "Drive MCP Server" as Server
+participant "User's Browser" as Browser
+participant "Google OAuth" as Google
+
+User -> Client: Start application
+Client -> Server: Connect (SSE)
+Client -> Client: Generate a client_id for the user (random UUID)
+Client -> Server: Call check_authentication_status(client_id)
+
+Client -> User: Display auth URL (with client_id)
+User -> Browser: Open auth URL
+Browser -> Server: GET /authorize?client_id=<client_id>
+
+Server -> Browser: Redirect to OAuth consent screen
+Browser -> Google: GET OAuth consent screen
+Google -> Browser: Display consent screen
+Browser -> Browser: Users Grant permission
+Google -> Browser: Redirect to /oauth2callback
+Browser -> Server: GET /oauth2callback?code=<code>&state=<state>
+
+Server -> Server: Verify state and get client_id
+Server -> Google: Exchange code for tokens
+Google --> Server: Return credentials
+Server -> Server: Store credentials for client_id
+
+Client -> User: Display "Authentication successful"
+
+@enduml 

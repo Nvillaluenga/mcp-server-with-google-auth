@@ -7,5 +7,8 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.12",
     "fastmcp>=2.3.3",
+    "google-api-python-client>=2.169.0",
+    "google-auth>=2.40.1",
+    "google-auth-oauthlib>=1.2.2",
     "google-genai>=1.15.0",
 ]
