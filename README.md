@@ -13,8 +13,8 @@ This project demonstrates an MCP (Model Context Protocol) server with Google Dri
 
 1.  **Clone the repository:**
     ```bash
-    git clone <your-repository-url>
-    cd <your-repository-name>
+    git clone https://github.com/Nvillaluenga/mcp-server-with-google-auth.git
+    cd mcp-server-with-google-auth
     ```
 
 2.  **Create and activate a virtual environment with `uv`:**
@@ -50,7 +50,7 @@ This project demonstrates an MCP (Model Context Protocol) server with Google Dri
     - Edit `.env` with your configuration:
       - `PROJECT`: Your Google Cloud Project ID
       - `LOCATION`: Your GCP region (e.g., `us-central1`)
-      - `DEFAULT_MODEL`: Gemini model name (e.g., `gemini-1.5-flash-001`)
+      - `DEFAULT_MODEL`: Gemini model name (e.g., `gemini-2.0-flash-001`)
       - `HOST`: Server host (default: `localhost`)
       - `PORT`: Server port (default: `8081`)
 
