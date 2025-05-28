@@ -1,0 +1,35 @@
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  - id: trailing-whitespace
+  - id: end-of-file-fixer
+  - id: check-toml
+  - id: check-added-large-files
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.6.9
+  hooks:
+    - id: ruff
+      args: [ --fix, --unsafe-fixes ] 
+    - id: ruff-format
+- repo: local
+  hooks:
+    - id: ty
+      name: ty check
+      entry: uvx ty check . --ignore unresolved-import
+      language: python
+- repo: https://github.com/jsh9/pydoclint
+  rev: 0.5.9
+  hooks:
+    - id: pydoclint
+      args: [--config=pyproject.toml]
+- repo: local
+  hooks:
+  - id: run-tests
+    name: run tests
+    entry: uv run pytest
+    language: system
+    pass_filenames: false
+    always_run: true
+    types: [python]
+    stages: [pre-push]

@@ -1,5 +1,6 @@
+"""MCP Client for interacting with an MCP server."""
+
 import os
-from typing import Optional, List
 from contextlib import AsyncExitStack
 from copy import copy
 import asyncio
@@ -20,41 +21,42 @@ load_dotenv()  # load environment variables from .env
 
 
 # AUX FUNCTIONS
-def is_url(string: str) -> bool:
+def _is_url(string: str) -> bool:
     try:
         result = urlparse(string)
         return all([result.scheme, result.netloc])
-    except:
+    except Exception:  # pylint: disable=broad-except
         return False
 
 
 class MCPClient:
-    """
-    A base client for interacting with an MCP server.
+    """A base client for interacting with an MCP server."""
 
-    Args:
-        client_id (Optional[str]): Client ID to be used for authentication with MCP servers.
-            If not provided, a unique ID will be generated. This ID will be sent in requests
-            to identify this client session.
-    """
+    def __init__(self, client_id: str | None = None):
+        """Initializes the MCPClient with an optional client ID.
 
-    def __init__(self, client_id: Optional[str] = None):
+        Args:
+            client_id (str | None): Client ID to be used for authentication. Defaults to None.
+        """
         # Initialize session and client objects
-        self.session: Optional[ClientSession] = None
+        self.session: ClientSession | None = None
         self.exit_stack: AsyncExitStack = AsyncExitStack()
         # Generate a client_id if not provided
-        self.client_id = client_id if client_id else str(uuid.uuid4())
+        self.client_id = client_id or str(uuid.uuid4())
         self.server_url = None
 
     async def connect_to_server(self, server_path: str):
-        """Connect to an MCP server
+        """Connect to an MCP server.
 
         Args:
-            server_path: Path to the server script (.py or .js) or URL for web server
+            server_path (str): Path to the server script (.py or .js) or URL for web server
+
+        Raises:
+            ValueError: If the server path is not a .py file, .js file, or web URL
         """
         is_python = server_path.endswith(".py")
         is_js = server_path.endswith(".js")
-        is_web = is_url(server_path)
+        is_web = _is_url(server_path)
 
         if not (is_python or is_js or is_web):
             raise ValueError("Server must be a .py file, .js file, or web URL")
@@ -72,7 +74,6 @@ class MCPClient:
             transport = await self.exit_stack.enter_async_context(
                 sse_client(sse_url, headers=headers)
             )
-            self.stdio, self.write = transport
         else:  # For MCP Servers as scripts local scripts, use stdio transport
             command = "python" if is_python else "node"
             server_params = StdioServerParameters(
@@ -82,8 +83,7 @@ class MCPClient:
             transport = await self.exit_stack.enter_async_context(
                 stdio_client(server_params)
             )
-            self.stdio, self.write = transport
-
+        self.stdio, self.write = transport
         self.session = await self.exit_stack.enter_async_context(
             ClientSession(self.stdio, self.write)
         )
@@ -98,9 +98,7 @@ class MCPClient:
             print(f"Description: {tool.description}")
 
     async def authenticate_with_mcp_server(self):
-        """
-        Authenticate user with Google Drive using client_id based authentication.
-        """
+        """Authenticate user with Google Drive using client_id based authentication."""
         # Check if user is already authenticated
         if self.session:
             # Check authentication status with our client_id
@@ -108,7 +106,7 @@ class MCPClient:
                 "check_authentication_status", {}
             )  # TODO: Think if this should be a tool call or a http request
 
-            if "authenticated" == result.content[0].text:
+            if result.content[0].text == "authenticated":
                 print("Already authenticated with Google Drive.")
             else:
                 print("Authentication needed with Google Drive.")
@@ -127,19 +125,19 @@ class MCPClient:
                     result = await self.session.call_tool(
                         "check_authentication_status", {}
                     )
-                    if "authenticated" == result.content[0].text:
+                    if result.content[0].text == "authenticated":
                         print("Authentication successful!")
                         break
                     print("Waiting for authentication to complete...")
         else:
             print("Cannot authenticate: Not connected to server.")
 
-    async def query(self, query: str, tools: List[Tool] | None = None) -> str:
-        """Query the model with a given query and tools"""
+    async def query(self, query: str, tools: list[Tool] | None = None) -> str:
+        """Query the model with a given query and tools."""
         raise NotImplementedError("This method should be implemented by the subclass")
 
     async def chat_loop(self):
-        """Run an interactive chat loop"""
+        """Run an interactive chat loop."""
         print("\nMCP Client Started!")
         print("Type your queries or 'help' to know available commands.")
         print(f"Using client ID: {self.client_id}")
@@ -180,29 +178,34 @@ class MCPClient:
                 available_tools = tools_response.tools
                 response = await self.query(query, tools=available_tools)
                 print(response)
-            except Exception as e:
+            except Exception as e: # pylint: disable=broad-except
                 print(f"Error: {e}")
 
     async def cleanup(self):
-        """Clean up resources"""
+        """Clean up resources."""
         if self.exit_stack:
             await self.exit_stack.aclose()
 
 
 class GeminiMCPClient(MCPClient):
-    """
-    A client for interacting with an LLM via an MCP server, specifically using Gemini.
-    """
+    """A client for interacting with an LLM via an MCP server, specifically using Gemini."""
 
     def __init__(
         self,
-        model: Optional[str] = None,
-        config: Optional[types.GenerateContentConfig] = None,
-        client_id: Optional[str] = None,  # Added client_id
+        model: str | None = None,
+        config: types.GenerateContentConfig | None = None,
+        client_id: str | None = None,  # Added client_id
     ):
+        """Initializes the GeminiMCPClient with a Gemini model and configuration.
+
+        Args:
+            model (str | None): The Gemini model to use. Defaults to the DEFAULT_MODEL environment variable.
+            config (types.GenerateContentConfig | None): Configuration for content generation. Defaults to None.
+            client_id (str | None): Client ID to be used for authentication. Defaults to None.
+        """
         super().__init__(client_id)  # Call parent constructor
 
-        self.model = model if model else os.getenv("DEFAULT_MODEL")
+        self.model = model or os.getenv("DEFAULT_MODEL")
         self.genai_client = genai.Client(
             vertexai=True,
             project=os.getenv("PROJECT"),
@@ -234,7 +237,7 @@ class GeminiMCPClient(MCPClient):
             self.config = config
 
     def _query_model(
-        self, contents: List[types.Content], tools: List[Tool] | None = None
+        self, contents: list[types.Content], tools: list[Tool] | None = None
     ) -> types.GenerateContentResponse:  # Added return type hint
         """Internal method to query the Gemini model."""
         mcp_tools = self._parse_tools(tools)
@@ -246,16 +249,14 @@ class GeminiMCPClient(MCPClient):
                 types.Tool(function_declarations=mcp_tools)
             ]
 
-        # Initial Gemini API call
-        response = self.genai_client.models.generate_content(
+        return self.genai_client.models.generate_content(
             model=self.model,
             contents=contents,
             config=generate_content_config,
         )
-        return response  # Return the actual response object
 
-    def _parse_tools(self, tools: List[Tool] | None):
-        """Convert MCP tools to Gemini function declarations"""
+    def _parse_tools(self, tools: list[Tool] | None):
+        """Convert MCP tools to Gemini function declarations."""
         if not tools:
             return []
 
@@ -286,9 +287,9 @@ class GeminiMCPClient(MCPClient):
         return tool_functions
 
     async def query(
-        self, query: str, tools: List[Tool] | None = None
+        self, query: str, tools: list[Tool] | None = None
     ) -> str:  # Implement the query method
-        """Process a query using Gemini and available tools"""
+        """Process a query using Gemini and available tools."""
         if not self.session:
             raise ConnectionError(
                 "Not connected to a server. Call connect_to_server first."
@@ -345,7 +346,7 @@ class GeminiMCPClient(MCPClient):
                         response = self._query_model(contents, tools)
                         break  # Process the new response in the next iteration
 
-                    except Exception as e:
+                    except Exception as e: # pylint: disable=broad-except
                         print(f"Error calling tool {tool_name}: {e}")
                         # Decide how to handle tool call errors, maybe respond to user?
                         return f"Error executing tool {tool_name}: {e}"  # Or return an error message

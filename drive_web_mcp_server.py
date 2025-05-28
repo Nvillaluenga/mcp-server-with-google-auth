@@ -1,3 +1,5 @@
+"""Drive MCP Server with Google Authentication."""
+
 import os
 from dotenv import load_dotenv
 from google.oauth2.credentials import Credentials
@@ -10,8 +12,6 @@ from fastapi.responses import RedirectResponse
 import uuid
 from starlette.routing import Mount
 from fastmcp.server.dependencies import get_http_request
-from google.oauth2 import id_token
-from google.auth.transport import requests
 
 load_dotenv()  # load environment variables from .env
 
@@ -39,13 +39,13 @@ REDIRECT_URI = f"http://{os.getenv('HOST')}:{os.getenv('PORT')}/oauth2callback"
 
 async def get_client_id_from_request(request: Request):
     """Get client_id from query parameters (for initial authorization)."""
-    client_id = request.query_params.get("client_id")
-    if not client_id:
+    if client_id := request.query_params.get("client_id"):
+        return client_id
+    else:
         raise HTTPException(
             status_code=400,
             detail="client_id query parameter is required for authorization",
         )
-    return client_id
 
 
 @app.get("/authorize")
@@ -115,8 +115,10 @@ async def oauth2callback(request: Request, code: str, state: str):
 
         # Return success with client_id
         return f"Authentication successful for user: {user_id}, You can close this window now."
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Authentication error: {str(e)}")
+    except Exception as e: # pylint: disable=broad-except
+        raise HTTPException(
+            status_code=500, detail=f"Authentication error: {str(e)}"
+        ) from e
 
 
 async def get_drive_service(client_id: str):
@@ -153,11 +155,10 @@ async def get_drive_service(client_id: str):
 
 @mcp.tool()
 async def search_drive_files(query: str) -> str:
-    """
-    Search for files in Google Drive using a query string that follows the Google Drive API query syntax.
+    """Search for files in Google Drive using a query string that follows the Google Drive API query syntax.
 
     Args:
-        query: Search query to find files (e.g., "name contains 'report'" or "mimeType='application/pdf'")
+        query (str): Search query to find files (e.g., "name contains 'report'" or "mimeType='application/pdf'")
 
     Query examples:
     - Find all PDF files in my drive -> search_drive_files("mimeType='application/pdf'")
@@ -166,6 +167,8 @@ async def search_drive_files(query: str) -> str:
     - Find all files with 'report' in the name and return the link and the name and the mimeType and the size
     - Find Google Docs named 'Meeting Notes' modified after January 1, 2025: -> mimeType = 'application/vnd.google-apps.document' and name contains 'Meeting Notes' and modifiedTime > '2025-01-01T00:00:00'
 
+    Returns:
+        str: A list of files found in Google Drive that match the query.
     """
     try:
         request = get_http_request()
@@ -205,9 +208,7 @@ async def search_drive_files(query: str) -> str:
 
 @mcp.tool()
 async def check_authentication_status() -> str:
-    """
-    Check if a user is authenticated based on the X-Client-ID header.
-    """
+    """Check if a user is authenticated based on the X-Client-ID header."""
     request = get_http_request()
     client_id = request.headers.get("X-Client-ID")
     # TODO: Validate client_id
@@ -219,7 +220,7 @@ async def check_authentication_status() -> str:
 
     # Check our in-memory store
     if client_id in credentials_store:
-        return f"authenticated"
+        return "authenticated"
     else:
         return "not authenticated"
 
@@ -230,8 +231,8 @@ app.router.routes.append(Mount("/", app=mcp.sse_app()))
 if __name__ == "__main__":
     import uvicorn
 
-    host = os.getenv("HOST")
-    port = os.getenv("PORT")
+    host = os.getenv("HOST", "Undefined")
+    port = os.getenv("PORT", 8080)
     print(f"Starting Google Drive MCP server on http://{host}:{port}")
 
     uvicorn.run(app, host=host, port=int(port))
