@@ -1,9 +1,8 @@
 [project]
-name = "mcp-server-google-auth"
-version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.12"
+authors = [
+    { name = "Ignacio Villaluenga", email = "nachovillaluenga@gmail.com" },
+    { name = "Martin Hadid", email = "martinhadid@gmail.com" },
+]
 dependencies = [
     "fastapi>=0.115.12",
     "fastmcp>=2.3.3",
@@ -12,3 +11,32 @@ dependencies = [
     "google-auth-oauthlib>=1.2.2",
     "google-genai>=1.15.0",
 ]
+description = "This project demonstrates an MCP (Model Context Protocol) server with Google Drive integration and a client to interact with it using Gemini."
+name = "mcp-server-google-auth"
+readme = "README.md"
+requires-python = ">=3.12"
+version = "0.1.0"
+
+[dependency-groups]
+dev = ["pre-commit>=4.2.0", "ruff>=0.11.11", "ty>=0.0.1a7"]
+
+[tool.pydoclint]
+allow-init-docstring = true
+style = "google"
+
+[tool.ruff]
+line-length = 88
+# select = ["T201"] # flag print statements
+
+[tool.ruff.lint]
+extend-select = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+docstring-code-format = true
+quote-style = "double"
+
+[tool.ruff.lint.per-file-ignores]
+"*_test.py" = ["D"]

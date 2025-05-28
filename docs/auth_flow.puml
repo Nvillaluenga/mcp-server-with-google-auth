@@ -30,4 +30,4 @@ Server -> Server: Store credentials for client_id
 
 Client -> User: Display "Authentication successful"
 
-@enduml 
+@enduml

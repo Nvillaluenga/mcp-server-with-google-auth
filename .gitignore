@@ -3,8 +3,13 @@
 
 # Python cache files
 __pycache__/
+*.py[oc]
 *.py[cod]
 *$py.class
+build/
+dist/
+wheels/
+*.egg-info
 
 # Virtual environments
 .venv/
@@ -26,6 +31,7 @@ htmlcov/
 .vscode/
 *.sublime-project
 *.sublime-workspace
+*.DS_Store
 
 # Logs and temporary files
 *.log

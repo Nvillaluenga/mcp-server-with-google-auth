@@ -1,18 +1,13 @@
+"""Main script to run the Drive MCP client."""
+
 import asyncio
 import sys
 from mcp_client import GeminiMCPClient
 
 
 async def main():
-    """
-    Example of connecting to and using the MCP server.
-    """
-    if len(sys.argv) < 2:
-        # Default to local server if no argument is provided
-        server_path = "http://localhost:8081"
-    else:
-        server_path = sys.argv[1]
-
+    """Example of connecting to and using the MCP server."""
+    server_path = "http://localhost:8081" if len(sys.argv) < 2 else sys.argv[1]
     print(f"Connecting to Drive MCP server at: {server_path}")
 
     # Create client and connect to the server
