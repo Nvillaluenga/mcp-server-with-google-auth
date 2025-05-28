@@ -1,9 +1,6 @@
 # Environment variables and secrets
 .env
 
-# Python uv package manager files
-uv.lock
-
 # Python cache files
 __pycache__/
 *.py[oc]
